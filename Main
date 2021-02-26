@@ -1,0 +1,206 @@
+#define WINVER 0x0500
+#include <windows.h>
+#include <fstream>
+#include <string>
+#include <iostream>
+#include <winuser.h>
+
+void LeftClick();
+void pressKeyB(char mK);
+void writeWord(std::string word);
+void pressTab(); 
+void pressEnter();
+void special(int unicode);
+
+int main(int argc, const char* argv[])
+{
+    BOOL SetForegroundWindow(HWND hWnd);
+    std::string pol, niem, buffor;
+    std::string slowo;
+    std::ifstream myfile;
+    std::ofstream myfileof;
+    bool zakonczono = true;
+    while (true) {
+        myfile.open("words.txt", std::ios::in);
+        system("cls");
+
+        std::cout << "Podaj slowo: " ;
+        std::cin >> slowo;
+        zakonczono = true;
+        while (getline(myfile, buffor) && getline(myfile, pol)&&getline(myfile, niem)&&zakonczono)
+        {
+            if (slowo == pol) {
+                SetCursorPos(150, 100);
+                LeftClick();
+                Sleep(100);
+                pressTab();
+                writeWord(niem); 
+                pressEnter();
+                Sleep(1000);
+                pressEnter();
+                Sleep(200);
+                HWND hWnd = ::GetConsoleWindow();
+                //set up a generic keyboard event
+                INPUT keyInput;
+                keyInput.type = INPUT_KEYBOARD;
+                keyInput.ki.wScan = 0; //hardware scan code for key
+                keyInput.ki.time = 0;
+                keyInput.ki.dwExtraInfo = 0;
+
+                //set focus to the hWnd (sending Alt allows to bypass limitation)
+                keyInput.ki.wVk = VK_MENU;
+                keyInput.ki.dwFlags = 0;   //0 for key press
+                SendInput(1, &keyInput, sizeof(INPUT));
+
+                SetForegroundWindow(hWnd); //sets the focus 
+
+                keyInput.ki.wVk = VK_MENU;
+                keyInput.ki.dwFlags = KEYEVENTF_KEYUP;  //for key release
+                SendInput(1, &keyInput, sizeof(INPUT));
+                zakonczono = false;
+                myfile.clear();
+                myfile.seekg(0);
+            }
+        }
+        myfile.close();
+        if (zakonczono) {
+            myfileof.open("words.txt", std::ios::out|std::ios::app);
+            std::cout << std::endl << std::endl
+                << "spacja:         _" << std::endl
+                << "u umlaut:       )" << std::endl
+                << "U umlaut:       (" << std::endl
+                << "a umlaut:       *" << std::endl
+                << "A umlaut:       &" << std::endl
+                << "o umlaut:       ^" << std::endl
+                << "O umlaut:       %" << std::endl
+                << "ss umlaut:      $" << std::endl << std::endl << std::endl;
+            std::cout << "Podaj tlumaczenie: ";
+            std::cin >> buffor;
+            myfileof << "###:" << std::endl;
+            myfileof << slowo << std::endl;
+            myfileof << buffor << std::endl;
+            myfileof.close();
+        }
+    }
+return 0;
+}
+void LeftClick()
+{
+	INPUT    Input = { 0 };
+	// left down 
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+	::SendInput(1, &Input, sizeof(INPUT));
+
+	// left up
+	::ZeroMemory(&Input, sizeof(INPUT));
+	Input.type = INPUT_MOUSE;
+	Input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+	::SendInput(1, &Input, sizeof(INPUT));
+}
+
+void pressKeyB(char mK)
+{
+    HKL kbl = GetKeyboardLayout(0);
+    INPUT ip;
+    ip.type = INPUT_KEYBOARD;
+    ip.ki.time = 0;
+    ip.ki.dwFlags = KEYEVENTF_UNICODE;
+    if ((int)mK < 65 && (int)mK>90) //for lowercase
+    {
+        ip.ki.wScan = 0;
+        ip.ki.wVk = VkKeyScanEx(mK, kbl);
+    }
+    else //for uppercase
+    {
+        ip.ki.wScan = mK;
+        ip.ki.wVk = 0;
+    }
+    ip.ki.dwExtraInfo = 0;
+    SendInput(1, &ip, sizeof(INPUT));
+}
+
+void writeWord(std::string word) {
+    for(int i = 0; i < word.length(); i++){
+        if (word[i] == ')') {
+            special(0x00FC);//ü
+            Sleep(50);
+        }
+        else if (word[i] == '(') {
+            special(0x00DC);//Ü
+            Sleep(50);
+        }
+        else if (word[i] == '*') {
+            special(0x00E4);//ä
+            Sleep(50);
+        }
+        else if (word[i] == '&') {
+            special(0x00C4);//Ä
+            Sleep(50);
+        }
+        else if (word[i] == '^') {
+            special(0x00F6);//ö
+            Sleep(50);
+        }
+        else if (word[i] == '%') {
+            special(0x00D6);//Ö
+            Sleep(50);
+        }
+        else if (word[i] == '$') {
+            special(0x00DF);//ß
+            Sleep(50);
+        }
+        else if (word[i] == '_') {
+            pressKeyB(' ');//space
+            Sleep(50);
+        }
+        else {
+            pressKeyB(word[i]);
+            Sleep(50);
+        }
+    }
+}
+
+void pressTab() {
+    INPUT input;
+    input.type = INPUT_KEYBOARD;
+    input.ki.time = 0;
+    input.ki.dwExtraInfo = 0;
+    input.ki.wScan = 0;
+    input.ki.dwFlags = 0;
+
+    input.ki.wVk = VK_TAB;
+    input.ki.dwFlags = 0;
+    SendInput(1, &input, sizeof(INPUT));
+    Sleep(200);
+
+    input.ki.dwFlags = KEYEVENTF_KEYUP;
+    SendInput(1, &input, sizeof(INPUT));
+}
+void pressEnter() {
+    INPUT input;
+    input.type = INPUT_KEYBOARD;
+    input.ki.time = 0;
+    input.ki.dwExtraInfo = 0;
+    input.ki.wScan = 0;
+    input.ki.dwFlags = 0;
+
+    input.ki.wVk = VK_RETURN;
+    input.ki.dwFlags = 0;
+    SendInput(1, &input, sizeof(INPUT));
+    Sleep(200);
+
+    input.ki.dwFlags = KEYEVENTF_KEYUP;
+    SendInput(1, &input, sizeof(INPUT));
+}
+void special(int unicode){
+    INPUT input;
+    input.type = INPUT_KEYBOARD;
+    input.ki.dwFlags = KEYEVENTF_UNICODE;
+    input.ki.wVk = 0;
+    input.ki.wScan = unicode; // HEX UNICODE 
+    SendInput(1, &input, sizeof(INPUT));
+
+    input.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+    SendInput(1, &input, sizeof(INPUT));
+}
